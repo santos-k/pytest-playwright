@@ -1,0 +1,38 @@
+# requirements.txt
+#
+# This file lists all dependencies for the Playwright wrapper framework.
+# Each entry includes a usage note and is grouped by category.
+
+# =============================
+# Core Automation Libraries
+# =============================
+playwright>=1.39.0   # Web automation engine (sync API used for browser/page/element control)
+
+# =============================
+# Testing Frameworks
+# =============================
+pytest>=7.0.0        # Test runner for Python (used for running and organizing tests)
+pytest-check>=2.2.2  # Soft assertions for pytest (used for non-blocking checks in tests)
+
+# =============================
+# Logging & Utilities
+# =============================
+# (No extra packages required; uses Python built-in logging)
+
+# =============================
+# Typing & Compatibility
+# =============================
+# (No extra packages required; uses Python built-in typing)
+
+# =============================
+# Other Required Libraries
+# =============================
+# (No extra packages required; all other dependencies are built-in)
+
+# =============================
+# Notes
+# =============================
+# - All packages are compatible with Python 3.10+
+# - To install all dependencies, run: pip install -r requirements.txt
+# - Playwright requires a one-time browser install: python -m playwright install
+

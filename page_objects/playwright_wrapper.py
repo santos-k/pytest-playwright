@@ -3,13 +3,16 @@ playwright_wrapper.py
 A production-grade Playwright wrapper for Python automation frameworks.
 """
 
+import logging
 import os
 import sys
-import logging
 from datetime import datetime
 from functools import wraps
-from typing import Optional, Any, List, Dict
-from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page, Locator, TimeoutError as PlaywrightTimeoutError
+from typing import Optional, Any
+
+from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page, Locator, \
+    TimeoutError as PlaywrightTimeoutError
+
 
 # =========================
 # Custom Exceptions
@@ -380,14 +383,12 @@ class BasePage:
 
     @screenshot_on_error
     def assert_text(self, selector: str, expected: str, timeout: int = 10000) -> None:
-        """Assert that the text of an element matches expected value."""
+        """Assert that the text of an element matches expected value using pytest_check (soft assert)."""
         try:
+            import pytest_check as check
             actual = self.page.locator(selector).text_content(timeout=timeout)
-            assert actual == expected, f"Text assertion failed: expected '{expected}', got '{actual}'"
+            check.equal(actual, expected, f"Text assertion failed: expected '{expected}', got '{actual}'")
             self.logger.info(f"Asserted text for {selector}: '{actual}' == '{expected}'")
-        except AssertionError as ae:
-            self.logger.error(str(ae))
-            raise ActionFailed(str(ae))
         except PlaywrightTimeoutError:
             self.logger.error(f"Timeout asserting text for selector: {selector}")
             raise ActionFailed(f"Timeout asserting text for selector: {selector}")
@@ -470,10 +471,9 @@ class BrowserManager:
 
     @property
     def get_screenshots_dir(self) -> str:
-        """Get the screenshots directory."""
+        """Get the screenshots' directory."""
         return self.screenshots_dir
 
 # =========================
 # End of playwright_wrapper.py
 # =========================
-
