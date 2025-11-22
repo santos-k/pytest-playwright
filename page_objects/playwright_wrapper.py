@@ -420,7 +420,36 @@ class BrowserManager:
         try:
             self.playwright = sync_playwright().start()
             browser_launcher = getattr(self.playwright, self.browser_type)
-            self.browser = browser_launcher.launch(headless=self.headless)
+            # When running headful (not headless) on Chromium, start the browser maximized
+            launch_kwargs = {}
+            if not self.headless and self.browser_type == "chromium":
+                # Try to detect screen size to pass explicit window-size (helps on some platforms)
+                try:
+                    # Windows: use ctypes
+                    if os.name == 'nt':
+                        from ctypes import windll
+                        screen_w = windll.user32.GetSystemMetrics(0)
+                        screen_h = windll.user32.GetSystemMetrics(1)
+                    else:
+                        # Fallback: try tkinter
+                        try:
+                            import tkinter as _tk
+                            root = _tk.Tk()
+                            root.withdraw()
+                            screen_w = root.winfo_screenwidth()
+                            screen_h = root.winfo_screenheight()
+                            root.destroy()
+                        except Exception:
+                            screen_w, screen_h = 1920, 1080
+                except Exception:
+                    screen_w, screen_h = 1920, 1080
+                # --start-maximized helps, and providing a window-size ensures the browser window is large
+                launch_kwargs["args"] = [
+                    "--start-maximized",
+                    f"--window-size={screen_w},{screen_h}",
+                    "--window-position=0,0",
+                ]
+            self.browser = browser_launcher.launch(headless=self.headless, **launch_kwargs)
             self.logger.info(f"Started browser: {self.browser_type}, headless={self.headless}")
         except Exception as e:
             self.logger.error(f"Failed to start browser: {e}")
@@ -453,12 +482,18 @@ class BrowserManager:
             raise NavigationError(f"Failed to create new context: {e}")
 
     def new_page(self) -> Page:
-        """Create a new page in the current context."""
+        """Create a new page in the current context, but reuse an existing one if present."""
         try:
             if not self.context:
                 self.new_context()
-            self.page = self.context.new_page()
-            self.logger.info("Created new page.")
+            # If the context already has pages, reuse the first one to avoid opening duplicates
+            existing_pages = getattr(self.context, 'pages', [])
+            if existing_pages:
+                self.page = existing_pages[0]
+                self.logger.info("Reusing existing page in context.")
+            else:
+                self.page = self.context.new_page()
+                self.logger.info("Created new page.")
             return self.page
         except Exception as e:
             self.logger.error(f"Failed to create new page: {e}")
